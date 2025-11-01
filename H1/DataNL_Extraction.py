@@ -44,4 +44,4 @@ class ExtractFeatures:
 # Import TSV file
 df = pd.read_csv('dataset.tsv', sep='\t')
 ExtractDfFeatures = ExtractFeatures(df)
-ExtractDfFeatures.PrintInformation(5)
+ExtractDfFeatures.PrintInformation(n=15)
