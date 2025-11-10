@@ -1,4 +1,4 @@
-
+import os
 import subprocess
 import sys
 subprocess.check_call([sys.executable, "-m", "pip", "install", "nltk", "pandas"])
@@ -17,23 +17,29 @@ class ExtractFeatures:
         self.Word = nltk.word_tokenize(text)
         self.Sentences = nltk.sent_tokenize(text)
         print("Features extracted successfully. \n")
+    # Number of sentences
     def NumberOfSentences(self):
         return len(self.Sentences)
+    # Average word length
     def AverageWordLength(self):
         total_length = sum(len(word) for word in self.Word)
         average_length = total_length / len(self.Word) if self.Word else 0
         return average_length
+    # Number of words
     def NumberOfWords(self):
         return len(self.Word)
+    # Average words per sentence
     def AverageWordsPerSentence(self):
         total_words = self.NumberOfWords()
         total_Sentences = self.NumberOfSentences()
         AveragWordsPersentence = total_words / total_Sentences
         return(AveragWordsPersentence)
+    # Most common n words
     def MostCommonWords(self, n):
-        words_lower = [word.lower() for word in self.Word]
+        words_lower = [word.lower() for word in self.Word if word.isalpha()]
         MostCommonWords = Counter(words_lower).most_common(n)
         return "\n".join([f"Word: '{tupla[0]}' - Frequency: {tupla[1]}" for tupla in MostCommonWords])
+    # Print all information
     def PrintInformation(self, n=10):
         print(f"1. Total Words: {self.NumberOfWords()}")
         print(f"2. Average Word Length: {self.AverageWordLength():.2f} letters per word")
@@ -41,7 +47,7 @@ class ExtractFeatures:
         print(f"4. Average Words Per Sentence: {self.AverageWordsPerSentence():.2f} words/sentence")
         print(f"5. Most {n} commons Words: \n\n{self.MostCommonWords(n)}")
 
-# Import TSV file
-df = pd.read_csv('dataset.tsv', sep='\t')
+# Import CSV file and run the feature extraction
+df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'dataset.tsv'), sep='\t')
 ExtractDfFeatures = ExtractFeatures(df)
-ExtractDfFeatures.PrintInformation(n=20)
+ExtractDfFeatures.PrintInformation(n=5)
