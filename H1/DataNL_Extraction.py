@@ -50,4 +50,4 @@ class ExtractFeatures:
 # Import CSV file and run the feature extraction
 df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'dataset.tsv'), sep='\t')
 ExtractDfFeatures = ExtractFeatures(df)
-ExtractDfFeatures.PrintInformation(n=5)
+ExtractDfFeatures.PrintInformation(n=10)
