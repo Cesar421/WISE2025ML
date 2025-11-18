@@ -189,7 +189,7 @@ class ClassLMS():
         # Save to TSV file
         predictions_df.to_csv(output_file, sep='\t', index=False)
         print(f"Predictions saved to {output_file}")
-        print(f"Total predictions: {len(predictions_df)}")
+        print(f"Total predictions in the test dataset: {len(predictions_df)}")
         print(f"Predicted as human (True): {is_human_pred.sum()}")
         print(f"Predicted as AI (False): {(~is_human_pred).sum()}")
         return predictions_df
