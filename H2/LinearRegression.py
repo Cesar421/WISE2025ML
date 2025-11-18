@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 class ClassLMS():
     def __init__(self):
@@ -64,12 +63,12 @@ class ClassLMS():
 
         # LMS training
         np.random.seed(0)
-        w = np.zeros(3)  # [w0, w1, w2]
-        error_history = []  # Lista para guardar el error de cada época
+        w = np.zeros(3)
+        error_history = []  
 
         for j in range(epochs):
             idx = np.random.permutation(len(X_vals))
-            epoch_error = 0.0  # Acumular error de esta época
+            epoch_error = 0.0 
             
             for i in idx:
                 x1, x2 = X_vals[i]
@@ -77,9 +76,9 @@ class ClassLMS():
                 y_hat = np.dot(w, x_aug)
                 e = y[i] - y_hat
                 w += lr * e * x_aug
-                epoch_error += e ** 2  # Acumular error cuadrático
+                epoch_error += e ** 2 
             
-            # Guardar MSE de esta época
+            # Store the MSE error
             mse = epoch_error / len(X_vals)
             error_history.append(mse)
 
@@ -147,14 +146,11 @@ class ClassLMS():
             legend_elements.append(Line2D([0],[0], color='k', lw=2, linestyle='--', label='LMS boundary'))
         plt.legend(handles=legend_elements, loc='best')
         plt.tight_layout()
+        plt.savefig(f'{f1}_vs_{f2}_scatter.png', dpi=300, bbox_inches='tight')
         plt.show()
     
     def plot_error_history(self):
-        """Grafica el error (MSE) vs época durante el entrenamiento"""
-        if not hasattr(self, 'error_history') or not self.error_history:
-            print("No hay historial de errores. Entrena el modelo primero.")
-            return
-        
+        # Graph MSE error
         plt.figure(figsize=(8, 5))
         plt.plot(range(1, len(self.error_history) + 1), self.error_history, 'b-', linewidth=2)
         plt.xlabel('Época')
@@ -162,14 +158,49 @@ class ClassLMS():
         plt.title('Error de entrenamiento vs Época')
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
+        plt.savefig(f'error_scatter.png', dpi=300, bbox_inches='tight')
         plt.show()
+    
+    def predict_test(self, X_test=None, f1=None, f2=None, W0=None, W1=None, W2=None, output_file='predictions-test.tsv'):
+        # Use defaults if not provided
+        if X_test is None:
+            X_test = self.X_test
+        if f1 is None:
+            f1 = self.f1
+        if f2 is None:
+            f2 = self.f2
+        if W0 is None:
+            W0 = self.W0
+        if W1 is None:
+            W1 = self.W1
+        if W2 is None:
+            W2 = self.W2   
+        # Extract features
+        X_test_features = X_test[[f1, f2]].astype(float).values
+        # Make predictions: y_hat = W0 + W1*x1 + W2*x2
+        y_pred = W0 + W1 * X_test_features[:, 0] + W2 * X_test_features[:, 1]
+        # Classify: if y_hat >= 0.5 -> True (human), else False (AI)
+        is_human_pred = y_pred >= 0.5
+        # Create dataframe with id and is_human columns
+        predictions_df = pd.DataFrame({
+            'id': X_test['id'],
+            'is_human': is_human_pred
+        })
+        # Save to TSV file
+        predictions_df.to_csv(output_file, sep='\t', index=False)
+        print(f"Predictions saved to {output_file}")
+        print(f"Total predictions: {len(predictions_df)}")
+        print(f"Predicted as human (True): {is_human_pred.sum()}")
+        print(f"Predicted as AI (False): {(~is_human_pred).sum()}")
+        return predictions_df
     
 
 model = ClassLMS()
 X_train, X_test, y_train = model.load_features()
-model.train_model(lr=0.001, epochs=100, f1 = 'num_words' , f2 = 'num_characters')
+model.train_model(lr=0.001, epochs=100, f1='num_words', f2='num_characters')
 model.visualization()
-model.plot_error_history()  # Graficar el error vs época del segundo modelo
+model.plot_error_history()
+predictions = model.predict_test()
 
 
 
