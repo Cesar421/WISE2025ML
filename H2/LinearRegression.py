@@ -140,7 +140,7 @@ class ClassLMS():
 
         plt.xlabel(f1)
         plt.ylabel(f2)
-        plt.title(f'{f1} vs {f2} with LMS line')
+        plt.title(f'{f1} vs {f2} with LMS line for training data (Final MSE: {self.error_history[-1]:.3f})')
         from matplotlib.lines import Line2D
         legend_elements = [
             Line2D([0],[0], marker='o', color='w', label='is_human = 1', markerfacecolor='red', markersize=8),
