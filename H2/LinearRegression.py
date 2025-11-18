@@ -194,7 +194,6 @@ class ClassLMS():
         print(f"Predicted as AI (False): {(~is_human_pred).sum()}")
         return predictions_df
     
-
 model = ClassLMS()
 X_train, X_test, y_train = model.load_features()
 model.train_model(lr=0.001, epochs=100, f1='num_words', f2='num_characters')
