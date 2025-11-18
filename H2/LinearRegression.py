@@ -162,7 +162,7 @@ class ClassLMS():
         plt.plot(range(1, len(self.error_history) + 1), self.error_history, 'b-', linewidth=2)
         plt.xlabel('Epoch')
         plt.ylabel('MSE (Mean Squared Error)')
-        plt.title('Training error vs Epochs')
+        plt.title(f'Training error vs Epochs (Final MSE: {self.error_history[-1]:.3f})')
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         plt.savefig(f'error_scatter.png', dpi=300, bbox_inches='tight')
