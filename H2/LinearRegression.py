@@ -17,7 +17,7 @@ class ClassLMS():
 
     def load_features(self):
         print('-' * 30)
-        print('Starting to load data set')
+        print('Starting to load dataset')
         X_train = pd.read_csv('dataset/features-train.tsv', sep='\t')
         X_test = pd.read_csv('dataset/features-test.tsv', sep='\t')
         y_train = pd.read_csv('dataset/labels-train.tsv', sep='\t')
@@ -28,7 +28,7 @@ class ClassLMS():
                 .replace({'true': True, 'false': False})
                 .astype(int) if y_train['is_human'].dtype == object else y_train['is_human'].astype(int)
             )
-        print('data set load successfully')
+        print('Dataset loaded successfully')
         
         # Store in instance
         self.X_train = X_train
@@ -95,7 +95,7 @@ class ClassLMS():
 
         print(f"LMS weights (standardized): {w}")
         print(f"LMS weights (original space): W0={W0}, W1={W1}, W2={W2}")
-        print('Model train succesfuly')
+        print('Model trained successfully')
         print (f'Error: {error_history[-1]}')
 
         # Store all parameters for later visualization
@@ -160,9 +160,9 @@ class ClassLMS():
         # Graph MSE error
         plt.figure(figsize=(8, 5))
         plt.plot(range(1, len(self.error_history) + 1), self.error_history, 'b-', linewidth=2)
-        plt.xlabel('Época')
+        plt.xlabel('Epoch')
         plt.ylabel('MSE (Mean Squared Error)')
-        plt.title('Error de entrenamiento vs Época')
+        plt.title('Training error vs Epochs')
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         plt.savefig(f'error_scatter.png', dpi=300, bbox_inches='tight')
