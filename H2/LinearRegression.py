@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 class ClassLMS():
     def __init__(self):
+        print('-' * 100)
         self.lr = 0.01
         self.epochs = 100
         self.f1 = 'num_words'
@@ -15,6 +16,7 @@ class ClassLMS():
         np.random.seed(0)
 
     def load_features(self):
+        print('-' * 30)
         print('Starting to load data set')
         X_train = pd.read_csv('dataset/features-train.tsv', sep='\t')
         X_test = pd.read_csv('dataset/features-test.tsv', sep='\t')
@@ -36,7 +38,7 @@ class ClassLMS():
         return X_train, X_test, y_train
 
     def train_model(self, lr=None, epochs=None, X_train=None, y_train=None, f1=None, f2=None):
-
+        print('-' * 30)
         print('Starting to train the model')
         if lr is None:
             lr = self.lr
@@ -106,6 +108,8 @@ class ClassLMS():
         return W0, W1, W2
 
     def visualization(self, X_train=None, y_train=None, f1=None, f2=None, W0=None, W1=None, W2=None):
+        print('-' * 30)
+        print('Starting visualization')
         # Use defaults if not provided
         if X_train is None:
             X_train = self.X_train
@@ -148,8 +152,11 @@ class ClassLMS():
         plt.tight_layout()
         plt.savefig(f'{f1}_vs_{f2}_scatter.png', dpi=300, bbox_inches='tight')
         plt.show()
+        print('Visualization complete')
     
     def plot_error_history(self):
+        print('-' * 30)
+        print('Plotting error history')
         # Graph MSE error
         plt.figure(figsize=(8, 5))
         plt.plot(range(1, len(self.error_history) + 1), self.error_history, 'b-', linewidth=2)
@@ -160,8 +167,11 @@ class ClassLMS():
         plt.tight_layout()
         plt.savefig(f'error_scatter.png', dpi=300, bbox_inches='tight')
         plt.show()
+        print('Error history plotted')
     
     def predict_test(self, X_test=None, f1=None, f2=None, W0=None, W1=None, W2=None, output_file='predictions-test.tsv'):
+        print('-' * 30)
+        print('Starting predictions on test set')
         # Use defaults if not provided
         if X_test is None:
             X_test = self.X_test
@@ -192,14 +202,20 @@ class ClassLMS():
         print(f"Total predictions in the test dataset: {len(predictions_df)}")
         print(f"Predicted as human (True): {is_human_pred.sum()}")
         print(f"Predicted as AI (False): {(~is_human_pred).sum()}")
+        print('Predictions complete')
         return predictions_df
     
-model = ClassLMS()
-X_train, X_test, y_train = model.load_features()
-model.train_model(lr=0.001, epochs=100, f1='num_words', f2='num_characters')
-model.visualization()
-model.plot_error_history()
-predictions = model.predict_test()
+def main():
+    model = ClassLMS()
+    model.load_features()
+    model.train_model(lr=0.001, epochs=100)
+    model.visualization()
+    model.plot_error_history()
+    model.predict_test()
+    print('-' * 100)
+
+if __name__ == "__main__":
+    main()
 
 
 
