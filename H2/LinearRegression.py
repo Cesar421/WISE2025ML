@@ -66,27 +66,39 @@ class ClassLMS():
         # LMS training
         np.random.seed(0)
         w = np.zeros(3)
-        error_history = []  
+        MSE_history = []
+        RSS_history = []
 
         for j in range(epochs):
             idx = np.random.permutation(len(X_vals))
-            epoch_error = 0.0 
             
+            # Update weights for all samples
             for i in idx:
                 x1, x2 = X_vals[i]
                 x_aug = np.array([1.0, x1, x2])
                 y_hat = np.dot(w, x_aug)
                 e = y[i] - y_hat
                 w += lr * e * x_aug
-                epoch_error += e ** 2 
+            
+            # Compute MSE/RSS after all updates (standardized space)
+            epoch_error = 0.0
+            for i in range(len(X_vals)):
+                x1, x2 = X_vals[i]
+                x_aug = np.array([1.0, x1, x2])
+                y_hat = np.dot(w, x_aug)
+                e = y[i] - y_hat
+                epoch_error += e ** 2
             
             # Store the MSE error
             mse = epoch_error / len(X_vals)
-            error_history.append(mse)
+            MSE_history.append(mse)
+            RSS_history.append(epoch_error)
+
 
         # Store weights and error history
         self.w = w
-        self.error_history = error_history
+        self.MSE_history = MSE_history
+        self.RSS_history = RSS_history
 
         # Convert weights to original feature space for plotting the line
         W0 = w[0] - w[1]*mu[f1]/sigma[f1] - w[2]*mu[f2]/sigma[f2]
@@ -96,7 +108,7 @@ class ClassLMS():
         print(f"LMS weights (standardized): {w}")
         print(f"LMS weights (original space): W0={W0}, W1={W1}, W2={W2}")
         print('Model trained successfully')
-        print (f'Error: {error_history[-1]}')
+        print (f'Final MSE: {MSE_history[-1]}')
 
         # Store all parameters for later visualization
         self.f1 = f1
@@ -140,7 +152,7 @@ class ClassLMS():
 
         plt.xlabel(f1)
         plt.ylabel(f2)
-        plt.title(f'{f1} vs {f2} with LMS line for training data (Final MSE: {self.error_history[-1]:.3f})')
+        plt.title(f'{f1} vs {f2} with LMS line for training data (Final MSE: {self.MSE_history[-1]:.3f}')
         from matplotlib.lines import Line2D
         legend_elements = [
             Line2D([0],[0], marker='o', color='w', label='is_human = True', markerfacecolor='red', markersize=8),
@@ -157,17 +169,74 @@ class ClassLMS():
     def plot_error_history(self):
         print('-' * 30)
         print('Plotting error history')
-        # Graph MSE error
+        
+        # Plot MSE
         plt.figure(figsize=(8, 5))
-        plt.plot(range(1, len(self.error_history) + 1), self.error_history, 'b-', linewidth=2)
+        plt.plot(range(1, len(self.MSE_history) + 1), self.MSE_history, 'b-', linewidth=2)
         plt.xlabel('Epoch')
         plt.ylabel('MSE (Mean Squared Error)')
-        plt.title(f'Training error vs Epochs (Final MSE: {self.error_history[-1]:.3f})')
+        plt.title(f'MSE vs Epochs (Final MSE: {self.MSE_history[-1]:.6f})')
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(f'error_scatter.png', dpi=300, bbox_inches='tight')
+        plt.savefig('MSE_history.png', dpi=300, bbox_inches='tight')
         plt.show()
+        
+        # Plot RSS
+        plt.figure(figsize=(8, 5))
+        plt.plot(range(1, len(self.RSS_history) + 1), self.RSS_history, 'r-', linewidth=2)
+        plt.xlabel('Epoch')
+        plt.ylabel('RSS (Residual Sum of Squares)')
+        plt.title(f'RSS vs Epochs (Final RSS: {self.RSS_history[-1]:.6f})')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig('RSS_history.png', dpi=300, bbox_inches='tight')
+        plt.show()
+        
         print('Error history plotted')
+    
+    def compute_rss(self, X_train=None, y_train=None, f1=None, f2=None, W0=None, W1=None, W2=None):
+        """
+        Compute RSS (Residual Sum of Squares) for requirement (c).
+        Calculates RSS in original feature space (not standardized).
+        """
+        print('-' * 30)
+        print('Computing RSS (Residual Sum of Squares)')
+        # Use defaults if not provided
+        if X_train is None:
+            X_train = self.X_train
+        if y_train is None:
+            y_train = self.y_train
+        if f1 is None:
+            f1 = self.f1
+        if f2 is None:
+            f2 = self.f2
+        if W0 is None:
+            W0 = self.W0
+        if W1 is None:
+            W1 = self.W1
+        if W2 is None:
+            W2 = self.W2
+        
+        # Extract features (ORIGINAL space, not standardized)
+        X_features = X_train[[f1, f2]].astype(float).values
+        y_true = y_train['target'].astype(float).values
+        
+        # Compute predictions in original space: y_hat = W0 + W1*x1 + W2*x2
+        y_pred = W0 + W1 * X_features[:, 0] + W2 * X_features[:, 1]
+        
+        # Compute RSS: sum of squared residuals
+        residuals = y_true - y_pred
+        rss = np.sum(residuals ** 2)
+        mse = rss / len(y_true)
+        rmse = np.sqrt(mse)
+        
+        print(f"RSS (Residual Sum of Squares): {rss:.6f}")
+        print(f"MSE (Mean Squared Error): {mse:.6f}")
+        print(f"RMSE (Root Mean Squared Error): {rmse:.6f}")
+        print(f"Note: Training RSS (standardized features, last epoch): {self.RSS_history[-1]:.6f}")
+        print('RSS computation complete')
+        
+        return rss, mse, rmse
     
     def predict_test(self, X_test=None, f1=None, f2=None, W0=None, W1=None, W2=None, output_file='predictions-test.tsv'):
         print('-' * 30)
@@ -211,6 +280,7 @@ def main():
     model.train_model(lr=0.001, epochs=100)
     model.visualization()
     model.plot_error_history()
+    model.compute_rss()  # Requirement (c): Compute RSS
     model.predict_test()
     print('-' * 100)
 
