@@ -247,7 +247,7 @@ def main():
     model.train_model(lr=0.001, epochs=100)
     model.visualization()
     model.plot_error_history()
-    model.compute_rss()  # Requirement (c): Compute RSS
+    model.compute_rss() 
     model.predict_test()
     print('-' * 100)
 
