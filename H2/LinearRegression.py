@@ -14,6 +14,20 @@ class ClassLMS():
         self.y_train = None
         self.w = None
         np.random.seed(0)
+    
+    def _apply_defaults(self, lr=None, epochs=None, X_train=None, X_test=None, y_train=None, f1=None, f2=None, W0=None, W1=None, W2=None):
+        return {
+            'lr': lr if lr is not None else self.lr,
+            'epochs': epochs if epochs is not None else self.epochs,
+            'X_train': X_train if X_train is not None else self.X_train,
+            'X_test': X_test if X_test is not None else self.X_test,
+            'y_train': y_train if y_train is not None else self.y_train,
+            'f1': f1 if f1 is not None else self.f1,
+            'f2': f2 if f2 is not None else self.f2,
+            'W0': W0 if W0 is not None else getattr(self, 'W0', None),
+            'W1': W1 if W1 is not None else getattr(self, 'W1', None),
+            'W2': W2 if W2 is not None else getattr(self, 'W2', None)
+        }
 
     def load_features(self):
         print('-' * 30)
@@ -40,18 +54,8 @@ class ClassLMS():
     def train_model(self, lr=None, epochs=None, X_train=None, y_train=None, f1=None, f2=None):
         print('-' * 30)
         print('Starting to train the model')
-        if lr is None:
-            lr = self.lr
-        if epochs is None:
-            epochs = self.epochs
-        if X_train is None:
-            X_train = self.X_train
-        if y_train is None:
-            y_train = self.y_train
-        if f1 is None:
-            f1 = self.f1
-        if f2 is None:
-            f2 = self.f2
+        d = self._apply_defaults(lr=lr, epochs=epochs, X_train=X_train, y_train=y_train, f1=f1, f2=f2)
+        lr, epochs, X_train, y_train, f1, f2 = d['lr'], d['epochs'], d['X_train'], d['y_train'], d['f1'], d['f2']
 
         # Prepare data
         X2 = X_train[[f1, f2]].astype(float).copy()
@@ -100,7 +104,7 @@ class ClassLMS():
         self.MSE_history = MSE_history
         self.RSS_history = RSS_history
 
-        # Convert weights to original feature space for plotting the line
+        # Convert weights to original feature space
         W0 = w[0] - w[1]*mu[f1]/sigma[f1] - w[2]*mu[f2]/sigma[f2]
         W1 = w[1] / sigma[f1]
         W2 = w[2] / sigma[f2]
@@ -123,20 +127,8 @@ class ClassLMS():
         print('-' * 30)
         print('Starting visualization')
         # Use defaults if not provided
-        if X_train is None:
-            X_train = self.X_train
-        if y_train is None:
-            y_train = self.y_train
-        if f1 is None:
-            f1 = self.f1
-        if f2 is None:
-            f2 = self.f2
-        if W0 is None:
-            W0 = self.W0
-        if W1 is None:
-            W1 = self.W1
-        if W2 is None:
-            W2 = self.W2
+        d = self._apply_defaults(X_train=X_train, y_train=y_train, f1=f1, f2=f2, W0=W0, W1=W1, W2=W2)
+        X_train, y_train, f1, f2, W0, W1, W2 = d['X_train'], d['y_train'], d['f1'], d['f2'], d['W0'], d['W1'], d['W2']
             
         # Scatter plot with decision line y_hat = 0.5  =>  W0 + W1*x + W2*y = 0.5
         colors = ['red' if v == 1 else 'blue' for v in y_train['target']]
@@ -152,7 +144,7 @@ class ClassLMS():
 
         plt.xlabel(f1)
         plt.ylabel(f2)
-        plt.title(f'{f1} vs {f2} with LMS line for training data (Final MSE: {self.MSE_history[-1]:.3f}')
+        plt.title(f'{f1} vs {f2} with LMS line for training data (Final MSE: {self.MSE_history[-1]:.3f})')
         from matplotlib.lines import Line2D
         legend_elements = [
             Line2D([0],[0], marker='o', color='w', label='is_human = True', markerfacecolor='red', markersize=8),
@@ -195,27 +187,12 @@ class ClassLMS():
         print('Error history plotted')
     
     def compute_rss(self, X_train=None, y_train=None, f1=None, f2=None, W0=None, W1=None, W2=None):
-        """
-        Compute RSS (Residual Sum of Squares) for requirement (c).
-        Calculates RSS in original feature space (not standardized).
-        """
+
         print('-' * 30)
         print('Computing RSS (Residual Sum of Squares)')
         # Use defaults if not provided
-        if X_train is None:
-            X_train = self.X_train
-        if y_train is None:
-            y_train = self.y_train
-        if f1 is None:
-            f1 = self.f1
-        if f2 is None:
-            f2 = self.f2
-        if W0 is None:
-            W0 = self.W0
-        if W1 is None:
-            W1 = self.W1
-        if W2 is None:
-            W2 = self.W2
+        d = self._apply_defaults(X_train=X_train, y_train=y_train, f1=f1, f2=f2, W0=W0, W1=W1, W2=W2)
+        X_train, y_train, f1, f2, W0, W1, W2 = d['X_train'], d['y_train'], d['f1'], d['f2'], d['W0'], d['W1'], d['W2']
         
         # Extract features (ORIGINAL space, not standardized)
         X_features = X_train[[f1, f2]].astype(float).values
@@ -242,18 +219,8 @@ class ClassLMS():
         print('-' * 30)
         print('Starting predictions on test set')
         # Use defaults if not provided
-        if X_test is None:
-            X_test = self.X_test
-        if f1 is None:
-            f1 = self.f1
-        if f2 is None:
-            f2 = self.f2
-        if W0 is None:
-            W0 = self.W0
-        if W1 is None:
-            W1 = self.W1
-        if W2 is None:
-            W2 = self.W2   
+        d = self._apply_defaults(X_test=X_test, f1=f1, f2=f2, W0=W0, W1=W1, W2=W2)
+        X_test, f1, f2, W0, W1, W2 = d['X_test'], d['f1'], d['f2'], d['W0'], d['W1'], d['W2']   
         # Extract features
         X_test_features = X_test[[f1, f2]].astype(float).values
         # Make predictions: y_hat = W0 + W1*x1 + W2*x2
