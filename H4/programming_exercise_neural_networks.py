@@ -68,27 +68,16 @@ def encode_class_values(cs: np.array, k: int = 2) -> np.array:  # change for 3 c
     n = len(cs)
     encoded = np.zeros((n, k))  # change for 3 classes
     for i in range(n):
-        encoded[i, cs[i]] = 1
+        encoded[i, cs[i]] = 1  # change for 3 classes
     return encoded
 
 
-def sigmoid(z: np.array) -> np.array:
+def sigmoid(z):
     """
     Apply sigmoid activation function element-wise.
     """
     # Clip to avoid overflow
-    z_clipped = np.clip(z, -30, 30)
-    return 1 / (1 + np.exp(-z_clipped))
-
-
-def softmax(z: np.array) -> np.array:
-    """
-    Apply softmax activation function.
-    For numerical stability, subtract max from z.
-    """
-    z_shifted = z - np.max(z, axis=1, keepdims=True)
-    exp_z = np.exp(z_shifted)
-    return exp_z / np.sum(exp_z, axis=1, keepdims=True)
+    return 1 / (1 + np.exp(-np.clip(z, -30, 30)))
 
 
 def predict_probabilities(Wh: np.array, Wo: np.array, xs: np.array) -> np.array:
@@ -104,17 +93,12 @@ def predict_probabilities(Wh: np.array, Wo: np.array, xs: np.array) -> np.array:
     - class probabilities with shape (n, k)  # change for 3 classes
     """
     # Forward pass through hidden layer
-    zh = np.dot(xs, Wh.T)  # (n, l)
-    ah = sigmoid(zh)  # (n, l)
-    
-    # Add bias term to hidden layer activations
-    ah_with_bias = np.hstack([np.ones((ah.shape[0], 1)), ah])  # (n, l+1)
+    yh = np.hstack([np.ones((xs.shape[0], 1)), sigmoid(Wh @ xs.T).T])  # (n, l+1)
     
     # Forward pass through output layer
-    zo = np.dot(ah_with_bias, Wo.T)  # (n, k)  # change for 3 classes
-    ao = softmax(zo)  # (n, k)  # change for 3 classes
+    yo = sigmoid(Wo @ yh.T).T  # (n, k)  # change for 3 classes
     
-    return ao
+    return yo
 
 
 def predict(Wh: np.array, Wo: np.array, xs: np.array) -> np.array:
@@ -151,7 +135,7 @@ def train_multilayer_perceptron(xs: np.array, cs: np.array, l: int = 10,
     - cs: class values for every element in xs (values 0, 1, ..., k-1)
     - l: number of hidden units
     - eta: learning rate
-    - iterations: number of iterations to run the algorithm
+    - iterations: number of iterations (epochs) to run the algorithm
     - validation_fraction: fraction of xs and cs used for validation
     
     Returns:
@@ -162,7 +146,7 @@ def train_multilayer_perceptron(xs: np.array, cs: np.array, l: int = 10,
     - weights_history: list of (Wh, Wo) tuples after each iteration
     """
     n = len(xs)
-    p = xs.shape[1]
+    p = xs.shape[1] - 1  # subtract 1 for bias term already in xs
     k = 2  # number of classes  # change for 3 classes
     
     # Split into training and validation sets
@@ -189,45 +173,43 @@ def train_multilayer_perceptron(xs: np.array, cs: np.array, l: int = 10,
     cs_train_encoded = encode_class_values(cs_train, k)  # change for 3 classes
     
     # Initialize weights
-    Wh = initialize_random_weights(l, p)
+    Wh = initialize_random_weights(l, p + 1)
     Wo = initialize_random_weights(k, l + 1)  # change for 3 classes
     
     train_misclass_history = []
     val_misclass_history = []
     weights_history = []
     
+    # IGD Algorithm: Outer loop over epochs
     for iteration in range(iterations):
-        # Forward pass for all training examples
-        # Hidden layer
-        zh = np.dot(xs_train, Wh.T)  # (n_train, l)
-        ah = sigmoid(zh)  # (n_train, l)
-        ah_with_bias = np.hstack([np.ones((ah.shape[0], 1)), ah])  # (n_train, l+1)
+        # Inner loop over training examples (Incremental Gradient Descent)
+        for i in range(len(xs_train)):
+            x = xs_train[i:i+1].T  # (p+1, 1) column vector
+            c = cs_train_encoded[i:i+1].T  # (k, 1) column vector  # change for 3 classes
+            
+            # (5) Forward propagation
+            yh = np.vstack([1, sigmoid(Wh @ x)])  # (l+1, 1)
+            y = sigmoid(Wo @ yh)  # (k, 1)  # change for 3 classes
+            
+            # (6) Calculation of residual vector
+            delta = c - y  # (k, 1)  # change for 3 classes
+            
+            # (7a) Backpropagation
+            delta_o = delta * y * (1 - y)  # (k, 1)  # change for 3 classes
+            delta_h = ((Wo.T @ delta_o) * yh * (1 - yh))[1:]  # (l, 1)
+            
+            # (7b) Weight update
+            delta_Wh = eta * (delta_h @ x.T)  # (l, p+1)
+            delta_Wo = eta * (delta_o @ yh.T)  # (k, l+1)  # change for 3 classes
+            
+            # (8) Weight update
+            Wh += delta_Wh
+            Wo += delta_Wo
         
-        # Output layer
-        zo = np.dot(ah_with_bias, Wo.T)  # (n_train, k)  # change for 3 classes
-        ao = softmax(zo)  # (n_train, k)  # change for 3 classes
-        
-        # Backward pass (compute gradients)
-        # Output layer error
-        delta_o = ao - cs_train_encoded  # (n_train, k)  # change for 3 classes
-        
-        # Hidden layer error
-        # Remove bias term from Wo for backpropagation
-        Wo_no_bias = Wo[:, 1:]  # (k, l)  # change for 3 classes
-        delta_h = np.dot(delta_o, Wo_no_bias) * ah * (1 - ah)  # (n_train, l)
-        
-        # Compute gradients
-        grad_Wo = np.dot(delta_o.T, ah_with_bias) / n_train  # (k, l+1)  # change for 3 classes
-        grad_Wh = np.dot(delta_h.T, xs_train) / n_train  # (l, p+1)
-        
-        # Update weights
-        Wo = Wo - eta * grad_Wo
-        Wh = Wh - eta * grad_Wh
-        
-        # Store weights
+        # Store weights after each epoch
         weights_history.append((Wh.copy(), Wo.copy()))
         
-        # Compute misclassification rates
+        # Compute misclassification rates after each epoch
         train_preds = predict(Wh, Wo, xs_train)
         train_misclass = misclassification_rate(cs_train, train_preds)
         train_misclass_history.append(train_misclass)
@@ -238,6 +220,10 @@ def train_multilayer_perceptron(xs: np.array, cs: np.array, l: int = 10,
             val_misclass_history.append(val_misclass)
         else:
             val_misclass_history.append(float('nan'))
+        
+        # Print progress every 10 epochs
+        if (iteration + 1) % 10 == 0:
+            print(f"Epoch {iteration + 1}/{iterations}: Train={train_misclass:.4f}, Val={val_misclass if len(xs_val) > 0 else 'N/A':.4f}")
     
     return Wh, Wo, train_misclass_history, val_misclass_history, weights_history
 
@@ -290,9 +276,9 @@ def main():
     print("\nTraining multilayer perceptron...")
     Wh, Wo, train_misclass_history, val_misclass_history, weights_history = train_multilayer_perceptron(
         xs_train, cs_train,
-        l=50,  # number of hidden units
-        eta=0.5,  # learning rate
-        iterations=1000,
+        l=15,  # number of hidden units
+        eta=0.1,  # learning rate
+        iterations=50,
         validation_fraction=0.2
     )
     
