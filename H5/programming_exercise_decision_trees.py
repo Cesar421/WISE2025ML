@@ -50,15 +50,22 @@ def load_data(features_file: str, labels_file: str = None) -> Tuple[np.ndarray, 
     Returns:
         Tuple of (features array, labels array or None)
     """
-    # Load features
+    # Load features - exclude the 'id' column
     features_df = pd.read_csv(features_file, sep='\t')
+    if 'id' in features_df.columns:
+        features_df = features_df.drop('id', axis=1)
     X = features_df.values
     
-    # Load labels if provided
+    # Load labels if provided - only load the label column, not 'id'
     y = None
     if labels_file:
         labels_df = pd.read_csv(labels_file, sep='\t')
-        y = labels_df.values.ravel()
+        # Get the label column (second column, assuming first is 'id')
+        label_col = labels_df.columns[-1]  # Get the last column (label column)
+        y = labels_df[label_col].values
+        # Convert boolean to int if needed
+        if y.dtype == bool:
+            y = y.astype(int)
     
     return X, y
 
