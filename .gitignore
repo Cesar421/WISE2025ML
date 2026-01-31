@@ -8,7 +8,7 @@ H5/backup_dontsend/
 backup_dontsend/
 
 # Ignore PDF files
-*.pdf
+#*.pdf
 
 # Ignore Word temp files
 ~$*.docx
