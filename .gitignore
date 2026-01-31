@@ -1,0 +1,19 @@
+# Ignore README files
+H5/README.md
+README.md
+
+
+# Ignore backup folders
+H5/backup_dontsend/
+backup_dontsend/
+
+# Ignore PDF files
+*.pdf
+
+# Ignore Word temp files
+~$*.docx
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo

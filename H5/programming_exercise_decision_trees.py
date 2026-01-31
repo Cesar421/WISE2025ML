@@ -50,15 +50,22 @@ def load_data(features_file: str, labels_file: str = None) -> Tuple[np.ndarray, 
     Returns:
         Tuple of (features array, labels array or None)
     """
-    # Load features
+    # Load features - exclude the 'id' column
     features_df = pd.read_csv(features_file, sep='\t')
+    if 'id' in features_df.columns:
+        features_df = features_df.drop('id', axis=1)
     X = features_df.values
     
-    # Load labels if provided
+    # Load labels if provided - only load the label column, not 'id'
     y = None
     if labels_file:
         labels_df = pd.read_csv(labels_file, sep='\t')
-        y = labels_df.values.ravel()
+        # Get the label column (second column, assuming first is 'id')
+        label_col = labels_df.columns[-1]  # Get the last column (label column)
+        y = labels_df[label_col].values
+        # Convert boolean to int if needed
+        if y.dtype == bool:
+            y = y.astype(int)
     
     return X, y
 
@@ -372,20 +379,27 @@ def main():
     
     Usage:
         python3 programming_exercise_decision_trees.py 
-            features-train-cleaned.tsv quality-scores-train-cleaned.tsv 
-            features-test-cleaned.tsv
+            [features-train.tsv labels-train.tsv features-test.tsv]
+        
+        If no arguments provided, uses default filenames.
     """
-    if len(sys.argv) != 4:
-        print("Usage: python3 programming_exercise_decision_trees.py "
-              "features-train.tsv labels-train.tsv features-test.tsv")
-        sys.exit(1)
-    
-    features_train_file = sys.argv[1]
-    labels_train_file = sys.argv[2]
-    features_test_file = sys.argv[3]
+    # Check if files are provided as arguments, otherwise use default names
+    if len(sys.argv) == 4:
+        features_train_file = sys.argv[1]
+        labels_train_file = sys.argv[2]
+        features_test_file = sys.argv[3]
+    else:
+        # Use default file names
+        features_train_file = "features-train.tsv"
+        labels_train_file = "labels-train.tsv"
+        features_test_file = "features-test.tsv"
+        print("Using default file names:")
+        print(f"  Training features: {features_train_file}")
+        print(f"  Training labels: {labels_train_file}")
+        print(f"  Test features: {features_test_file}")
     
     # Load data
-    print("Loading data...")
+    print("\nLoading data...")
     X_train, y_train = load_data(features_train_file, labels_train_file)
     X_test, _ = load_data(features_test_file)
     
