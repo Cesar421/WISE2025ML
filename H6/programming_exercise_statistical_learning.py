@@ -6,7 +6,7 @@ from math import prod
 # Starter code for exercise: Naive Bayes for Generative Authorship Detection
 ############################################################################
 
-GROUP = "XX" # TODO: write in your group name here
+GROUP = "02" # TODO: write in your group name here
 
 
 def load_bow_feature_vectors(filename: str) -> np.array:
@@ -49,6 +49,9 @@ def class_priors(cs: np.ndarray) -> dict:
         dict: a dictionary mapping each distinct class to its prior probability
     """
     # TODO: your code here
+    values, counts = np.unique(cs, return_counts=True)
+    n = len(cs)
+    return {v: c / n for v, c in zip(values, counts)}
 
 def extract_features(filename: str) -> np.array:
     """
@@ -70,6 +73,20 @@ def conditional_probabilities(xs: np.ndarray, cs: np.ndarray) -> dict:
         dict: nested dictionary d with d[c][B_j][x_j] = P(B_j = x_j | C=c)
     """
     # TODO: your code here
+    # nested dict: p[c][j][xj] = P(B_j=xj | C=c)
+    out = {}
+    classes = np.unique(cs)
+    p = xs.shape[1]
+
+    for c in classes:
+        Xc = xs[cs == c]
+        n_c = len(Xc)
+        out[c] = {}
+        for j in range(p):
+            col = Xc[:, j]
+            vals, cnts = np.unique(col, return_counts=True)
+            out[c][j] = {v: cnt / n_c for v, cnt in zip(vals, cnts)}
+    return out
 
 
 class NaiveBayesClassifier:
@@ -81,6 +98,9 @@ class NaiveBayesClassifier:
             cs (np.ndarray): n-element array of class values
         """
         # TODO: your code here
+        self.classes_ = list(np.unique(cs))
+        self.priors_ = class_priors(cs)
+        self.cond_ = conditional_probabilities(xs, cs)
     
     def predict(self, x: np.ndarray) -> str:
         """Generate a prediction for the data point x
@@ -92,6 +112,27 @@ class NaiveBayesClassifier:
             str: the most probable class for x
         """
         # TODO: your code here
+        best_c = None
+        best_logp = -np.inf
+
+        for c in self.classes_:
+            # log prior
+            logp = np.log(self.priors_[c])
+
+            # add log likelihoods for seen feature-values
+            for j, xj in enumerate(x):
+                pj_dict = self.cond_[c].get(j, {})
+                if xj in pj_dict:
+                    logp += np.log(pj_dict[xj])
+                else:
+                    # unseen value -> ignore feature (no evidence)
+                    logp += 0.0
+
+            if logp > best_logp:
+                best_logp = logp
+                best_c = c
+
+        return best_c
         
 
 
@@ -106,6 +147,27 @@ def train_and_predict(training_features_file_name: str, training_labels_file_nam
     examples in the testing dataset.
     """
     # TODO: Your code here
+    Xtr = load_bow_feature_vectors(training_features_file_name)
+    ctr = load_class_values(training_labels_file_name)
+
+    Xva = load_bow_feature_vectors(validation_features_file_name)
+    cva = load_class_values(validation_labels_file_name)
+
+    Xte = load_bow_feature_vectors(test_features_file_name)
+
+    clf = NaiveBayesClassifier()
+    clf.fit(Xtr, ctr)
+
+    # predict train/val
+    ytr = np.array([clf.predict(x) for x in Xtr])
+    yva = np.array([clf.predict(x) for x in Xva])
+
+    print("Train misclassification rate:", misclassification_rate(ctr, ytr))
+    print("Val misclassification rate:", misclassification_rate(cva, yva))
+
+    # predict test
+    yte = np.array([clf.predict(x) for x in Xte])
+    return yte
 
 ########################################################################
 # Tests
